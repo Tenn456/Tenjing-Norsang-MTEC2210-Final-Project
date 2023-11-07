@@ -44,14 +44,8 @@ public class Player : MonoBehaviour
 
     public bool isGrounded()
     {
-        if(Physics2D.Raycast(transform.position, Vector2.down, castDist, groundLayer))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        bool isGrounded = Physics2D.Raycast(transform.position, Vector2.down, castDist, groundLayer);
+        return isGrounded;
     }
 
     public void jump()
