@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Threading;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -20,7 +21,10 @@ public class Player : MonoBehaviour
     public bool facingRight = true;
     public bool firstDash = true;
     public float dashSpeed = 10;
-    public float drag = 2;
+    public float drag = 4;
+    public bool wallJumping;
+    public bool wallJumped;
+    float wjtimer = 0.1f;
 
     // Start is called before the first frame update
     void Start()
@@ -55,37 +59,39 @@ public class Player : MonoBehaviour
 
         
         //Movement refresher
-        if (isGrounded())
+        if (IsGrounded())
         {
             canMove = true;
             firstJump = true;
             firstDash = true;
+            wallJumping = false;
         }
 
         //Jump if press space and is grounded
-        if(Input.GetButtonDown("Jump") && isGrounded())
+        if(Input.GetButtonDown("Jump") && IsGrounded())
         {
-            jump();
+            Jump();
         }
 
         //Double jump if you only jumped once
-        if (Input.GetButtonDown("Jump") && firstJump && !isGrounded())
+        if (Input.GetButtonDown("Jump") && firstJump && !IsGrounded())
         {
-            jump();
+            Jump();
             firstJump = false;
         }
 
         //Wall jump if you are against a wall in the air
-        if (Input.GetButtonDown("Jump") && !isGrounded() && (wallRight() || wallLeft()))
+        if (Input.GetButtonDown("Jump") && !IsGrounded() && (WallRight() || WallLeft()))
         {
-            wallJump();
+            wallJumping = true;
+            WallJump();
             firstJump = false;
             canMove = false;
             firstDash = true;
         }
 
         //Dash if you are in the air
-        if (Input.GetKeyDown(KeyCode.LeftShift) && firstDash && !isGrounded())
+        if (Input.GetKeyDown(KeyCode.LeftShift) && firstDash && !IsGrounded())
         {
             dash();
             canMove = false;
@@ -94,9 +100,24 @@ public class Player : MonoBehaviour
         }
 
         //Wall Side if you are against a wall in the air
-        if (!isGrounded() && (wallRight() || wallLeft()))
+        if (xInput < 0 && !IsGrounded() && WallLeft() && !wallJumping)
         {
             rb.velocity = new Vector2(rb.velocity.x, - drag);
+        }
+
+        if (xInput > 0 && !IsGrounded() && WallRight() && !wallJumping)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, -drag);
+        }
+
+        if (wallJumping)
+        {
+            wjtimer -= Time.deltaTime;
+        }
+        if(wjtimer < 0)
+        {
+            wallJumping = false;
+            wjtimer = 0.1f;
         }
     }
 
@@ -119,21 +140,21 @@ public class Player : MonoBehaviour
         Invoke("dashTimer", 0.2f);
     }
 
-    public void dashTimer()
+    public void DashTimer()
     {
         rb.constraints = RigidbodyConstraints2D.None;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
     }
 
     //Ground Check
-    public bool isGrounded()
+    public bool IsGrounded()
     {
         bool isGrounded = Physics2D.Raycast(transform.position, Vector2.down, castDist, groundLayer);
         return isGrounded;
     }
 
     //Wall Check
-    public bool wallRight()
+    public bool WallRight()
     {
         if(Physics2D.Raycast(transform.position, Vector2.right, castDist, wallLayer))
         {
@@ -145,7 +166,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    public bool wallLeft()
+    public bool WallLeft()
     {
         if (Physics2D.Raycast(transform.position, Vector2.left, castDist, wallLayer))
         {
@@ -158,26 +179,27 @@ public class Player : MonoBehaviour
     }
 
     //Jump Code
-    public void jump()
+    public void Jump()
     {
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
     }
 
     //Wall Jump Code
-    public void wallJump()
+    public void WallJump()
     {
-        drag = 0;
-        if (wallRight())
+
+        if (WallRight())
         {
-            rb.velocity = new Vector2(rb.velocity.x - wallJumpForce, (jumpForce / 2));
+            rb.velocity = new Vector2(rb.velocity.x - wallJumpForce, jumpForce);
             facingRight = false;
             
         }
 
-        if (wallLeft())
+        if (WallLeft())
         {
-            rb.velocity = new Vector2(rb.velocity.x + wallJumpForce, jumpForce / 2);
+            rb.velocity = new Vector2(rb.velocity.x + wallJumpForce, jumpForce);
             facingRight = true;
         }
+
     }
 }
