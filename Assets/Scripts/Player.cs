@@ -44,8 +44,6 @@ public class Player : MonoBehaviour
         xInput = Input.GetAxis("Horizontal");
         if (canMove)
         {
-            transform.Translate(speed * Time.deltaTime * xInput, 0, 0);
-
             //Checks which way you are facing
             if (xInput > 0)
             {
@@ -81,7 +79,16 @@ public class Player : MonoBehaviour
         }
 
         //Wall jump if you are against a wall in the air
-        if (Input.GetButtonDown("Jump") && !IsGrounded() && (WallRight() || WallLeft()))
+        if (Input.GetButtonDown("Jump") && !IsGrounded() && WallRight() && xInput > 0)
+        {
+            wallJumping = true;
+            WallJump();
+            firstJump = false;
+            canMove = false;
+            firstDash = true;
+        }
+
+        if (Input.GetButtonDown("Jump") && !IsGrounded() && WallLeft() && xInput < 0)
         {
             wallJumping = true;
             WallJump();
@@ -91,29 +98,26 @@ public class Player : MonoBehaviour
         }
 
         //Dash if you are in the air
-        if (Input.GetKeyDown(KeyCode.LeftShift) && firstDash && !IsGrounded())
+        if (Input.GetKeyDown(KeyCode.LeftShift) && firstDash && !IsGrounded() && (!WallLeft() || !WallRight()))
         {
-            dash();
+            Dash();
             canMove = false;
             firstDash = false;
             
         }
 
-        //Wall Side if you are against a wall in the air
-        if (xInput < 0 && !IsGrounded() && WallLeft() && !wallJumping)
+        //Wall Slide if you are against a wall in the air
+        if (!IsGrounded() && (WallLeft() || WallRight()) && !wallJumping)
         {
-            rb.velocity = new Vector2(rb.velocity.x, - drag);
+            WallSlide();
         }
 
-        if (xInput > 0 && !IsGrounded() && WallRight() && !wallJumping)
-        {
-            rb.velocity = new Vector2(rb.velocity.x, -drag);
-        }
-
+        //To Fix Wall Slide dragging Wall Jump down
         if (wallJumping)
         {
             wjtimer -= Time.deltaTime;
         }
+
         if(wjtimer < 0)
         {
             wallJumping = false;
@@ -121,15 +125,37 @@ public class Player : MonoBehaviour
         }
     }
 
+    public void FixedUpdate()
+    {
+        if (canMove)
+        {
+            rb.velocity = new Vector2(xInput * speed, rb.velocity.y);
+        }
+        
+    }
+
+    //WallSlide Code
+    public void WallSlide()
+    {
+        if (WallLeft() && xInput < 0)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, -drag);
+        }
+
+        if (WallRight() && xInput > 0)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, -drag);
+        }
+    }
+
     //Dash code
-    public void dash()
+    public void Dash()
     {
         rb.constraints = RigidbodyConstraints2D.FreezePositionY;
 
         if (facingRight)
         {
-            rb.velocity = new Vector2(dashSpeed, rb.velocity.y);
-            
+            rb.velocity = new Vector2(dashSpeed, rb.velocity.y); 
         }
 
         if (!facingRight)
@@ -137,7 +163,8 @@ public class Player : MonoBehaviour
             rb.velocity = new Vector2(-dashSpeed, rb.velocity.y);
         }
 
-        Invoke("dashTimer", 0.2f);
+
+        Invoke("DashTimer", 0.2f);
     }
 
     public void DashTimer()
