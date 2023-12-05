@@ -98,7 +98,7 @@ public class Player : MonoBehaviour
         }
 
         //Dash if you are in the air
-        if (Input.GetKeyDown(KeyCode.LeftShift) && firstDash && !IsGrounded() && (!WallLeft() || !WallRight()))
+        if (Input.GetKeyDown(KeyCode.LeftShift) && firstDash && !IsGrounded())
         {
             Dash();
             canMove = false;
@@ -139,11 +139,13 @@ public class Player : MonoBehaviour
     {
         if (WallLeft() && xInput < 0)
         {
+            canMove = false;
             rb.velocity = new Vector2(rb.velocity.x, -drag);
         }
 
         if (WallRight() && xInput > 0)
         {
+            canMove = false;
             rb.velocity = new Vector2(rb.velocity.x, -drag);
         }
     }
