@@ -6,6 +6,11 @@ TagManager:
   tags:
   - Ground
   - Wall
+  - Collect
+  - Goal
+  - Platform
+  - BigCollect
+  - Trap
   layers:
   - Default
   - TransparentFX

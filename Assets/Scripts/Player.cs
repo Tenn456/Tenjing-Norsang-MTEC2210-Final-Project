@@ -1,13 +1,29 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net.Security;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
-    private Rigidbody2D rb;
+    public Rigidbody2D rb;
+    private GameManager gameManager;
+    private SpriteRenderer sr;
+    public AudioSource audioSource1;
+    public AudioSource audioSource2;
+    public AudioSource audioSource3;
+    public AudioSource audioSource4;
+    public AudioSource audioSource5;
+    public AudioSource audioSource6;
+    private AudioClip clip1;
+    private AudioClip clip2;
+    private AudioClip clip3;
+    private AudioClip clip4;
+    private AudioClip clip5;
+    private AudioClip clip6;
 
     public float speed;
     public float jumpForce = 10;
@@ -25,11 +41,21 @@ public class Player : MonoBehaviour
     public bool wallJumping;
     public bool wallJumped;
     float wjtimer = 0.1f;
+    public bool alive = true;
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        gameManager = GameObject.Find("Game Manager").GetComponent<GameManager>();
+        sr = GetComponent<SpriteRenderer>();
+        clip1 = audioSource1.clip;
+        clip2 = audioSource2.clip;
+        clip3 = audioSource3.clip;
+        clip4 = audioSource4.clip;
+        clip5 = audioSource5.clip;
+        clip6 = audioSource6.clip;
+        transform.position = gameManager.lastPos;
     }
 
     // Update is called once per frame
@@ -55,7 +81,22 @@ public class Player : MonoBehaviour
             }
         }
 
+        if (alive)
+        {
+            //Flips sprite depending on direction facing
+            if (!facingRight)
+            {
+                sr.flipY = true;
+            }
+
+            if (facingRight)
+            {
+                sr.flipY = false;
+            }
+        }
         
+
+
         //Movement refresher
         if (IsGrounded())
         {
@@ -137,16 +178,31 @@ public class Player : MonoBehaviour
     //WallSlide Code
     public void WallSlide()
     {
+        //Wallside
         if (WallLeft() && xInput < 0)
         {
             canMove = false;
             rb.velocity = new Vector2(rb.velocity.x, -drag);
+            sr.flipY = false;
         }
 
         if (WallRight() && xInput > 0)
         {
             canMove = false;
             rb.velocity = new Vector2(rb.velocity.x, -drag);
+            sr.flipY = true;
+        }
+
+
+        //Unstick to wall if input is opposite to wall
+        if (WallLeft() && xInput > 0)
+        {
+            canMove = true;
+        }
+
+        if (WallRight() && xInput < 0)
+        {
+            canMove = true;
         }
     }
 
@@ -154,6 +210,8 @@ public class Player : MonoBehaviour
     public void Dash()
     {
         rb.constraints = RigidbodyConstraints2D.FreezePositionY;
+
+        audioSource3.PlayOneShot(clip3);
 
         if (facingRight)
         {
@@ -210,12 +268,14 @@ public class Player : MonoBehaviour
     //Jump Code
     public void Jump()
     {
+        audioSource6.PlayOneShot(clip6);
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
     }
 
     //Wall Jump Code
     public void WallJump()
     {
+        audioSource6.PlayOneShot(clip6);
 
         if (WallRight())
         {
@@ -230,5 +290,47 @@ public class Player : MonoBehaviour
             facingRight = true;
         }
 
+    }
+
+    //Collector Code
+    private void OnTriggerEnter2D(Collider2D collision)
+    {   
+        if (collision.gameObject.CompareTag("Collect"))
+        {
+            gameManager.score += 100;
+            gameManager.scoreSince += 100;
+            audioSource1.PlayOneShot(clip1);
+            Destroy(collision.gameObject);
+        }
+
+        if (collision.gameObject.CompareTag("BigCollect"))
+        {
+            gameManager.score += 500;
+            gameManager.scoreSince += 500;
+            audioSource2.PlayOneShot(clip2);
+            Destroy(collision.gameObject);
+        }
+
+        if (collision.gameObject.CompareTag("Trap"))
+        {
+            alive = false;
+            audioSource4.PlayOneShot(clip4);
+            rb.constraints = RigidbodyConstraints2D.FreezePosition;
+            Invoke("Die", 1);
+        }
+
+        if (collision.gameObject.CompareTag("Goal"))
+        {
+            audioSource5.PlayOneShot(clip5);
+            Destroy(collision.gameObject);
+        }
+    }
+
+    //Reloads the scene
+    private void Die()
+    {
+        gameManager.resetScore();
+        gameManager.resetTime();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
